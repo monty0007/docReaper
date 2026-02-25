@@ -42,13 +42,14 @@ const isSafeUrl = (urlStr) => {
 /* =========================
    Middleware
 ========================= */
+const path = require('path');
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, '../public')));
 
 /* ✅ FIX: Root route (prevents Cannot GET /) */
 app.get('/', (req, res) => {
-    res.status(200).send('docReaper API running 🚀');
+    res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
 /* =========================
