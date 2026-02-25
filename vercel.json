@@ -1,23 +1,12 @@
 {
-    "version": 2,
-    "builds": [
-        {
-            "src": "api/index.js",
-            "use": "@vercel/node"
-        },
-        {
-            "src": "public/**/*",
-            "use": "@vercel/static"
-        }
-    ],
     "routes": [
         {
             "src": "/convert",
-            "dest": "api/index.js"
+            "dest": "/api/index.js"
         },
         {
             "src": "/build-pdf",
-            "dest": "api/index.js"
+            "dest": "/api/index.js"
         },
         {
             "src": "/(.*)",
@@ -26,7 +15,8 @@
     ],
     "functions": {
         "api/index.js": {
-            "maxDuration": 60
+            "maxDuration": 60,
+            "memory": 1024
         }
     }
 }
