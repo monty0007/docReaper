@@ -4,378 +4,300 @@ const { addExtra } = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const puppeteerExtra = addExtra(puppeteer);
 puppeteerExtra.use(StealthPlugin());
+
 const chromium = require('@sparticuz/chromium');
 const { PDFDocument } = require('pdf-lib');
 const cors = require('cors');
-const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security Middleware: SSRF Guard
+/* =========================
+   Security Middleware
+========================= */
 const isSafeUrl = (urlStr) => {
     try {
         const url = new URL(urlStr);
-        const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1'];
+
+        const blockedHosts = [
+            'localhost',
+            '127.0.0.1',
+            '0.0.0.0',
+            '::1'
+        ];
+
         if (blockedHosts.includes(url.hostname)) return false;
 
-        // Block internal IP ranges
-        const ipPattern = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|169\.254\.)/;
+        const ipPattern =
+            /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|169\.254\.)/;
+
         if (ipPattern.test(url.hostname)) return false;
 
         return url.protocol === 'http:' || url.protocol === 'https:';
-    } catch (e) {
+    } catch {
         return false;
     }
 };
 
-app.use(cors()); // Enable CORS for Vercel/Decoupled hosting
+/* =========================
+   Middleware
+========================= */
+app.use(cors());
 app.use(express.json({ limit: '20mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
-// Explicit wildcard route for React/SPA handling if Vercel misses it
+/* ✅ FIX: Root route (prevents Cannot GET /) */
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.status(200).send('docReaper API running 🚀');
 });
 
+/* =========================
+   PDF Styles
+========================= */
 const landscapeStyles = `
-    @page {
-        size: 1280px 720px;
-        margin: 0;
-    }
-    
-    /* 1. Shatter SPA 100vh scrolling locks to allow absolute full height capture */
-    html, body, #root, #__next, #app, main, .notion-app-inner {
-        height: auto !important;
-        min-height: auto !important;
-        max-height: none !important;
-        overflow: visible !important;
-        position: static !important;
-    }
+@page {
+    size: 1280px 720px;
+    margin: 0;
+}
 
-    /* 2. Prevent PDF rendering engine from slicing elements in half across pages */
-    p, img, h1, h2, h3, h4, h5, h6, li, table, pre, code, blockquote, .notion-block {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }
-    
-    /* Ensure images don't randomly distort when breaking */
-    img {
-        max-width: 100% !important;
-        object-fit: contain !important;
-    }
+html, body, #root, #__next, #app, main, .notion-app-inner {
+    height: auto !important;
+    overflow: visible !important;
+}
+
+p, img, h1, h2, h3, h4, h5, h6, li, table, pre, code {
+    page-break-inside: avoid !important;
+}
+
+img {
+    max-width: 100% !important;
+    object-fit: contain !important;
+}
 `;
 
+/* =========================
+   CONVERT API
+========================= */
 app.post('/convert', async (req, res) => {
-    const { mode, htmlContent } = req.body;
     let browser;
 
     try {
-        const isVercel = process.env.VERCEL || process.env.AWS_REGION;
+        const { mode, htmlContent } = req.body;
 
-        // Handle Vercel vs Local Execution
-        let executablePath = null;
-        if (isVercel) {
-            executablePath = await chromium.executablePath();
-        } else {
-            // Local Windows Chrome Path for development
-            executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-        }
+        const isVercel =
+            process.env.VERCEL || process.env.AWS_REGION;
+
+        const executablePath = isVercel
+            ? await chromium.executablePath()
+            : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
         browser = await puppeteerExtra.launch({
-            args: isVercel ? chromium.args : ['--no-sandbox', '--disable-setuid-sandbox'],
+            args: isVercel
+                ? chromium.args
+                : ['--no-sandbox', '--disable-setuid-sandbox'],
+            executablePath,
             defaultViewport: chromium.defaultViewport,
-            executablePath: executablePath,
             headless: chromium.headless,
-            ignoreHTTPSErrors: true,
         });
 
+        /* ================= HTML MODE ================= */
         if (mode === 'html') {
+
             const slides = htmlContent
                 .split(/<\/html>/i)
                 .map(s => s.trim())
-                .filter(s => s.length > 0)
+                .filter(Boolean)
                 .map(s => s + '</html>');
 
-            if (slides.length === 0) throw new Error('No valid HTML content found.');
+            if (!slides.length)
+                throw new Error('No valid HTML found');
 
             const pdfBuffers = [];
 
             for (const slideHtml of slides) {
                 const page = await browser.newPage();
-                await page.setViewport({ width: 1280, height: 720 });
-                await page.setContent(slideHtml, { waitUntil: 'networkidle0', timeout: 30000 });
-                await page.addStyleTag({ content: landscapeStyles });
+
+                await page.setViewport({
+                    width: 1280,
+                    height: 720
+                });
+
+                await page.setContent(slideHtml, {
+                    waitUntil: 'networkidle0'
+                });
+
+                await page.addStyleTag({
+                    content: landscapeStyles
+                });
 
                 const buffer = await page.pdf({
                     printBackground: true,
                     width: '1280px',
-                    height: '720px',
-                    landscape: true
+                    height: '720px'
                 });
+
                 pdfBuffers.push(buffer);
                 await page.close();
             }
 
-            let finalPdfBuffer;
+            let finalPdf;
+
             if (pdfBuffers.length === 1) {
-                finalPdfBuffer = pdfBuffers[0];
+                finalPdf = pdfBuffers[0];
             } else {
-                const mergedPdf = await PDFDocument.create();
+                const mergedPdf =
+                    await PDFDocument.create();
+
                 for (const buffer of pdfBuffers) {
-                    const pdf = await PDFDocument.load(buffer);
-                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                    copiedPages.forEach((page) => mergedPdf.addPage(page));
-                }
-                finalPdfBuffer = await mergedPdf.save();
-            }
+                    const pdf =
+                        await PDFDocument.load(buffer);
 
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="${slides.length > 1 ? 'presentation.pdf' : 'slide.pdf'}"`);
-            res.send(Buffer.from(finalPdfBuffer));
-
-        } else if (mode === 'url') {
-            const { url, cookies, directPdf } = req.body;
-            if (!url || !isSafeUrl(url)) {
-                throw new Error('Invalid or forbidden URL provided.');
-            }
-
-            const page = await browser.newPage();
-            await page.setViewport({ width: 1280, height: 720 });
-            await page.emulateMediaType('screen'); // CRITICAL: Force the website to render exactly as it does on a monitor, ignoring native print CSS.
-
-            // Handle Cookie Injection
-            if (cookies && Array.isArray(cookies) && cookies.length > 0) {
-                const targetDomain = new URL(url).hostname;
-                const formattedCookies = cookies.map(cookie => {
-                    // Puppeteer requires 'domain' or 'url' to be set when injecting cookies
-                    if (!cookie.domain && !cookie.url) {
-                        return { ...cookie, domain: targetDomain };
-                    }
-                    return cookie;
-                });
-                await page.setCookie(...formattedCookies);
-                console.log(`Injected ${formattedCookies.length} cookies for ${targetDomain}`);
-            }
-
-            // Navigate to the URL
-            await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
-
-            // Wait for potential Cloudflare "Verify you are human" challenge to pass
-            await new Promise(resolve => setTimeout(resolve, 8000));
-
-            // DOM Cleanup: Brutally remove annoying popups, banners, and sticky headers
-            await page.evaluate(() => {
-                // 1. Remove by common annoying class/id names
-                const annoyingSelectors = [
-                    '[id*="cookie"]', '[class*="cookie"]', '#cc-main', '.fc-consent-root',
-                    '[id*="banner"]', '[class*="banner"]',
-                    '[role="dialog"]', '.modal', '[class*="modal-"]',
-                    '[id*="popup"]', '[class*="popup"]',
-                    'header', 'nav' // Sticky headers repeat on every PDF segment, so we kill them
-                ];
-
-                annoyingSelectors.forEach(selector => {
-                    document.querySelectorAll(selector).forEach(el => {
-                        try { el.remove(); } catch (e) { }
-                    });
-                });
-
-                // 2. Hunt down and remove ANY fixed/sticky elements (like floating chat heads or bottom ribbons)
-                document.querySelectorAll('*').forEach(el => {
-                    const style = window.getComputedStyle(el);
-                    if (style.position === 'fixed' || style.position === 'sticky') {
-                        // Only remove if it's literally floating over the page
-                        if (style.display !== 'none') {
-                            try { el.remove(); } catch (e) { }
-                        }
-                    }
-                });
-
-                // 3. Reset body overflow in case a modal locked the scroll
-                document.body.style.overflow = 'visible';
-                document.documentElement.style.overflow = 'visible';
-            });
-
-            await page.addStyleTag({ content: landscapeStyles });
-
-            // 1. Force scroll to the bottom to trigger all lazy-loaded images and content
-            await page.evaluate(async () => {
-                await new Promise((resolve) => {
-                    let totalHeight = 0;
-                    const distance = 400; // Scroll roughly half a viewport at a time
-                    const timer = setInterval(() => {
-                        // find the tallest scrollable container
-                        const scrollHeight = Math.max(
-                            document.body.scrollHeight,
-                            document.documentElement.scrollHeight,
-                            document.querySelector('#root')?.scrollHeight || 0,
-                            document.querySelector('#__next')?.scrollHeight || 0,
-                            document.querySelector('.notion-app-inner')?.scrollHeight || 0
+                    const pages =
+                        await mergedPdf.copyPages(
+                            pdf,
+                            pdf.getPageIndices()
                         );
-                        window.scrollBy(0, distance);
 
-                        // Try to scroll inner containers if body doesn't scroll
-                        const innerScrollers = document.querySelectorAll('.notion-scroller, [style*="overflow: auto"], [style*="overflow-y: auto"], [style*="overflow: scroll"], [style*="overflow-y: scroll"]');
-                        innerScrollers.forEach(el => el.scrollBy(0, distance));
-
-                        totalHeight += distance;
-
-                        if (totalHeight >= scrollHeight) {
-                            clearInterval(timer);
-                            resolve();
-                        }
-                    }, 100); // 100ms between scrolls
-                });
-            });
-
-            // 2. Scroll back to the top
-            await page.evaluate(() => {
-                window.scrollTo(0, 0);
-                const innerScrollers = document.querySelectorAll('.notion-scroller, [style*="overflow: auto"], [style*="overflow-y: auto"], [style*="overflow: scroll"], [style*="overflow-y: scroll"]');
-                innerScrollers.forEach(el => el.scrollTo(0, 0));
-            });
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // 3. Calculate True Height
-            const totalHeight = await page.evaluate(() => {
-                return Math.max(
-                    document.body.scrollHeight,
-                    document.documentElement.scrollHeight,
-                    document.querySelector('#root')?.scrollHeight || 0,
-                    document.querySelector('#__next')?.scrollHeight || 0,
-                    document.querySelector('.notion-app-inner')?.scrollHeight || 0
-                );
-            });
-
-            const viewportHeight = 720;
-            const totalPages = Math.ceil(totalHeight / viewportHeight) || 1;
-
-            console.log(`Calculated height: ${totalHeight}px. Capturing ${totalPages} image segments...`);
-
-            const base64Images = [];
-            const rawImageBuffers = []; // For directPdf mode
-
-            // 4. Iterate and capture exact 16:9 segment screens
-            for (let i = 0; i < totalPages; i++) {
-                // Scroll main window AND any internal scrollers
-                await page.evaluate((y) => {
-                    window.scrollTo(0, y);
-                    const innerScrollers = document.querySelectorAll('.notion-scroller, [style*="overflow: auto"], [style*="overflow-y: auto"], [style*="overflow: scroll"], [style*="overflow-y: scroll"]');
-                    innerScrollers.forEach(el => el.scrollTo(0, y));
-                }, i * viewportHeight);
-
-                // Wait for any lazy-loaded content or floating headers to adjust
-                await new Promise(resolve => setTimeout(resolve, 800));
-
-                // Capture exact viewport as an image (guarantees 100% UI match)
-                const imageBuffer = await page.screenshot({
-                    type: 'jpeg',
-                    quality: 95,
-                    clip: {
-                        x: 0,
-                        y: i * viewportHeight,
-                        width: 1280,
-                        height: 720
-                    }
-                });
-
-                if (directPdf) {
-                    rawImageBuffers.push(imageBuffer);
-                } else {
-                    base64Images.push(`data:image/jpeg;base64,${imageBuffer.toString('base64')}`);
+                    pages.forEach(p =>
+                        mergedPdf.addPage(p)
+                    );
                 }
+
+                finalPdf = await mergedPdf.save();
             }
 
-            const filename = new URL(url).hostname.replace(/\./g, '_') + '.pdf';
+            res.setHeader(
+                'Content-Type',
+                'application/pdf'
+            );
 
-            if (directPdf) {
-                // Extension Mode: Stitch immediately and return PDF Blob
-                const mergedPdf = await PDFDocument.create();
-                for (const buffer of rawImageBuffers) {
-                    const img = await mergedPdf.embedJpg(buffer);
-                    const pdfPage = mergedPdf.addPage([1280, 720]);
-                    pdfPage.drawImage(img, {
-                        x: 0,
-                        y: 0,
-                        width: 1280,
-                        height: 720,
-                    });
-                }
-                const finalPdfBuffer = await mergedPdf.save();
-                res.setHeader('Content-Type', 'application/pdf');
-                res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-                res.send(Buffer.from(finalPdfBuffer));
-            } else {
-                // Web App Mode: Return raw images for Manual Review UI
-                res.json({
-                    status: 'success',
-                    mode: 'review',
-                    filename: filename,
-                    images: base64Images
-                });
-            }
-
-        } else {
-            throw new Error('Invalid mode. Use "html" or "url".');
+            return res.send(Buffer.from(finalPdf));
         }
 
-    } catch (error) {
-        console.error('Conversion Error:', error);
-        res.status(500).json({ status: 'error', message: error.message });
+        /* ================= URL MODE ================= */
+        if (mode === 'url') {
+
+            const { url } = req.body;
+
+            if (!url || !isSafeUrl(url))
+                throw new Error('Invalid URL');
+
+            const page = await browser.newPage();
+
+            await page.setViewport({
+                width: 1280,
+                height: 720
+            });
+
+            await page.goto(url, {
+                waitUntil: 'networkidle2',
+                timeout: 60000
+            });
+
+            await page.addStyleTag({
+                content: landscapeStyles
+            });
+
+            const buffer = await page.pdf({
+                printBackground: true,
+                width: '1280px',
+                height: '720px'
+            });
+
+            res.setHeader(
+                'Content-Type',
+                'application/pdf'
+            );
+
+            return res.send(buffer);
+        }
+
+        throw new Error('Invalid mode');
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            status: 'error',
+            message: err.message
+        });
     } finally {
         if (browser) await browser.close();
     }
 });
 
-// Phase 3: Receive cropped images and stitch them into the final PDF
+/* =========================
+   BUILD PDF API
+========================= */
 app.post('/build-pdf', async (req, res) => {
     try {
         const { images, filename } = req.body;
 
-        if (!images || !Array.isArray(images) || images.length === 0) {
-            throw new Error("No images provided for PDF construction.");
-        }
+        if (!images?.length)
+            throw new Error('No images');
 
-        const mergedPdf = await PDFDocument.create();
+        const mergedPdf =
+            await PDFDocument.create();
 
-        for (const base64Str of images) {
-            // strip the data:image/jpeg;base64 prefix
-            const b64Data = base64Str.replace(/^data:image\/\w+;base64,/, '');
-            const imageBuffer = Buffer.from(b64Data, 'base64');
+        for (const base64 of images) {
 
-            const img = await mergedPdf.embedJpg(imageBuffer);
+            const imgBuffer = Buffer.from(
+                base64.replace(
+                    /^data:image\/\w+;base64,/,
+                    ''
+                ),
+                'base64'
+            );
 
-            // Assume the frontend has cropped them to 16:9 aspect ratio or similar
-            // We use the image's inherent scaled dimensions to create the page
-            const scaledDims = img.scale(1.0);
+            const img =
+                await mergedPdf.embedJpg(imgBuffer);
 
-            const pdfPage = mergedPdf.addPage([scaledDims.width, scaledDims.height]);
-            pdfPage.drawImage(img, {
+            const dims = img.scale(1);
+
+            const page =
+                mergedPdf.addPage([
+                    dims.width,
+                    dims.height
+                ]);
+
+            page.drawImage(img, {
                 x: 0,
                 y: 0,
-                width: scaledDims.width,
-                height: scaledDims.height,
+                width: dims.width,
+                height: dims.height
             });
         }
 
-        const finalPdfBuffer = await mergedPdf.save();
+        const pdfBytes =
+            await mergedPdf.save();
 
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename || 'presentation.pdf'}"`);
-        res.send(Buffer.from(finalPdfBuffer));
+        res.setHeader(
+            'Content-Type',
+            'application/pdf'
+        );
 
-    } catch (error) {
-        console.error('PDF Build Error:', error);
-        res.status(500).json({ status: 'error', message: error.message });
+        res.send(Buffer.from(pdfBytes));
+
+    } catch (err) {
+        res.status(500).json({
+            status: 'error',
+            message: err.message
+        });
     }
 });
 
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+/* =========================
+   Local Dev Only
+========================= */
+if (!process.env.VERCEL) {
     app.listen(PORT, () => {
-        console.log(`docReaper Core running on http://localhost:${PORT}`);
+        console.log(
+            `docReaper running on http://localhost:${PORT}`
+        );
     });
 }
 
-// Export the Express API for Vercel Serverless Functions
+/* =========================
+   Vercel Export
+========================= */
 module.exports = app;
