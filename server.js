@@ -31,7 +31,12 @@ const isSafeUrl = (urlStr) => {
 
 app.use(cors()); // Enable CORS for Vercel/Decoupled hosting
 app.use(express.json({ limit: '20mb' }));
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Explicit wildcard route for React/SPA handling if Vercel misses it
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 const landscapeStyles = `
     @page {
@@ -366,6 +371,11 @@ app.post('/build-pdf', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`docReaper Core running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`docReaper Core running on http://localhost:${PORT}`);
+    });
+}
+
+// Export the Express API for Vercel Serverless Functions
+module.exports = app;
