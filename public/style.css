@@ -108,6 +108,26 @@ header p {
     font-weight: 300;
 }
 
+.ext-download-btn {
+    display: inline-block;
+    margin-top: 1rem;
+    background: rgba(168, 85, 247, 0.1);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    color: #c084fc;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: var(--transition-med);
+}
+
+.ext-download-btn:hover {
+    background: rgba(168, 85, 247, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.2);
+}
+
 /* Tabs */
 .tabs {
     background: rgba(255, 255, 255, 0.03);
@@ -448,4 +468,159 @@ footer {
     .tab-btn {
         width: 100%;
     }
+}
+
+/* Utilities */
+.hidden {
+    display: none !important;
+}
+
+/* Review Studio */
+.review-studio {
+    width: 100%;
+    background: var(--card-bg);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid var(--glass-border);
+    border-radius: 32px;
+    padding: 2rem;
+    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+    /* Fixed height so we can scroll inside */
+    animation: slideUpFade 0.7s var(--ease-squish);
+}
+
+.review-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    flex-shrink: 0;
+}
+
+.review-header p {
+    color: var(--text-dim);
+    margin-top: 5px;
+}
+
+.gallery {
+    flex: 1;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 16px;
+    border: 1px inset var(--glass-border);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    /* Pages touch each other linearly */
+}
+
+/* Hide scrollbar for aesthetics */
+.gallery::-webkit-scrollbar {
+    display: none;
+}
+
+.page-container {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    background: white;
+    /* PDF simulation */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.page-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+    user-drag: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+    /* Let drag events pass through to canvas or overlay */
+}
+
+/* The Crop Overlay */
+.crop-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    /* Dim out the cropped part */
+    pointer-events: none;
+    /* Only the handle is interactable */
+    clip-path: inset(100% 0 0 0);
+    /* Cropped part starts hidden at the bottom */
+}
+
+.crop-handle {
+    position: absolute;
+    bottom: -10px;
+    /* Start at the bottom of the image */
+    left: 0;
+    width: 100%;
+    height: 20px;
+    background: transparent;
+    cursor: ns-resize;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.crop-line {
+    width: 100%;
+    height: 3px;
+    background: var(--error);
+    box-shadow: 0 0 10px var(--error);
+    transition: background 0.2s;
+}
+
+.crop-handle:hover .crop-line {
+    background: white;
+    box-shadow: 0 0 15px white, 0 0 5px var(--error);
+}
+
+.page-number {
+    position: absolute;
+    top: 10px;
+    left: -40px;
+    color: var(--text-dim);
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.review-footer {
+    padding-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+#build-pdf-btn {
+    background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+    color: white;
+    border: none;
+    padding: 1.25rem 4rem;
+    border-radius: 20px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition-med);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+}
+
+#build-pdf-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.6);
+}
+
+#build-pdf-btn.loading .spinner {
+    display: block;
 }

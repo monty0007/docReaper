@@ -1,7 +1,10 @@
 const express = require('express');
-const puppeteer = require('puppeteer-extra');
+const puppeteer = require('puppeteer-core');
+const { addExtra } = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-puppeteer.use(StealthPlugin());
+const puppeteerExtra = addExtra(puppeteer);
+puppeteerExtra.use(StealthPlugin());
+const chromium = require('@sparticuz/chromium');
 const { PDFDocument } = require('pdf-lib');
 const cors = require('cors');
 const path = require('path');
@@ -63,8 +66,23 @@ app.post('/convert', async (req, res) => {
     let browser;
 
     try {
-        browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        const isVercel = process.env.VERCEL || process.env.AWS_REGION;
+
+        // Handle Vercel vs Local Execution
+        let executablePath = null;
+        if (isVercel) {
+            executablePath = await chromium.executablePath();
+        } else {
+            // Local Windows Chrome Path for development
+            executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+        }
+
+        browser = await puppeteerExtra.launch({
+            args: isVercel ? chromium.args : ['--no-sandbox', '--disable-setuid-sandbox'],
+            defaultViewport: chromium.defaultViewport,
+            executablePath: executablePath,
+            headless: chromium.headless,
+            ignoreHTTPSErrors: true,
         });
 
         if (mode === 'html') {
@@ -112,7 +130,7 @@ app.post('/convert', async (req, res) => {
             res.send(Buffer.from(finalPdfBuffer));
 
         } else if (mode === 'url') {
-            const { url, cookies } = req.body;
+            const { url, cookies, directPdf } = req.body;
             if (!url || !isSafeUrl(url)) {
                 throw new Error('Invalid or forbidden URL provided.');
             }
@@ -230,7 +248,8 @@ app.post('/convert', async (req, res) => {
 
             console.log(`Calculated height: ${totalHeight}px. Capturing ${totalPages} image segments...`);
 
-            const mergedPdf = await PDFDocument.create();
+            const base64Images = [];
+            const rawImageBuffers = []; // For directPdf mode
 
             // 4. Iterate and capture exact 16:9 segment screens
             for (let i = 0; i < totalPages; i++) {
@@ -256,24 +275,42 @@ app.post('/convert', async (req, res) => {
                     }
                 });
 
-                // Embed the image into the PDF as a new slide
-                const img = await mergedPdf.embedJpg(imageBuffer);
-                const pdfPage = mergedPdf.addPage([1280, 720]);
-                pdfPage.drawImage(img, {
-                    x: 0,
-                    y: 0,
-                    width: 1280,
-                    height: 720,
+                if (directPdf) {
+                    rawImageBuffers.push(imageBuffer);
+                } else {
+                    base64Images.push(`data:image/jpeg;base64,${imageBuffer.toString('base64')}`);
+                }
+            }
+
+            const filename = new URL(url).hostname.replace(/\./g, '_') + '.pdf';
+
+            if (directPdf) {
+                // Extension Mode: Stitch immediately and return PDF Blob
+                const mergedPdf = await PDFDocument.create();
+                for (const buffer of rawImageBuffers) {
+                    const img = await mergedPdf.embedJpg(buffer);
+                    const pdfPage = mergedPdf.addPage([1280, 720]);
+                    pdfPage.drawImage(img, {
+                        x: 0,
+                        y: 0,
+                        width: 1280,
+                        height: 720,
+                    });
+                }
+                const finalPdfBuffer = await mergedPdf.save();
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+                res.send(Buffer.from(finalPdfBuffer));
+            } else {
+                // Web App Mode: Return raw images for Manual Review UI
+                res.json({
+                    status: 'success',
+                    mode: 'review',
+                    filename: filename,
+                    images: base64Images
                 });
             }
 
-            // 5. Build final PDF buffer
-            const finalPdfBuffer = await mergedPdf.save();
-
-            const filename = new URL(url).hostname.replace(/\./g, '_') + '.pdf';
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-            res.send(Buffer.from(finalPdfBuffer));
         } else {
             throw new Error('Invalid mode. Use "html" or "url".');
         }
@@ -283,6 +320,49 @@ app.post('/convert', async (req, res) => {
         res.status(500).json({ status: 'error', message: error.message });
     } finally {
         if (browser) await browser.close();
+    }
+});
+
+// Phase 3: Receive cropped images and stitch them into the final PDF
+app.post('/build-pdf', async (req, res) => {
+    try {
+        const { images, filename } = req.body;
+
+        if (!images || !Array.isArray(images) || images.length === 0) {
+            throw new Error("No images provided for PDF construction.");
+        }
+
+        const mergedPdf = await PDFDocument.create();
+
+        for (const base64Str of images) {
+            // strip the data:image/jpeg;base64 prefix
+            const b64Data = base64Str.replace(/^data:image\/\w+;base64,/, '');
+            const imageBuffer = Buffer.from(b64Data, 'base64');
+
+            const img = await mergedPdf.embedJpg(imageBuffer);
+
+            // Assume the frontend has cropped them to 16:9 aspect ratio or similar
+            // We use the image's inherent scaled dimensions to create the page
+            const scaledDims = img.scale(1.0);
+
+            const pdfPage = mergedPdf.addPage([scaledDims.width, scaledDims.height]);
+            pdfPage.drawImage(img, {
+                x: 0,
+                y: 0,
+                width: scaledDims.width,
+                height: scaledDims.height,
+            });
+        }
+
+        const finalPdfBuffer = await mergedPdf.save();
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename || 'presentation.pdf'}"`);
+        res.send(Buffer.from(finalPdfBuffer));
+
+    } catch (error) {
+        console.error('PDF Build Error:', error);
+        res.status(500).json({ status: 'error', message: error.message });
     }
 });
 

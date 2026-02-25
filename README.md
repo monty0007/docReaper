@@ -19,7 +19,21 @@
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v16.x or higher)
-- [npm](https://www.npmjs.com/)
+- [pdf-lib](https://pdf-lib.js.org/)
+- [Vercel](https://vercel.com) (Frontend / Routing Configuration)
+
+---
+
+## 🚀 Vercel Production Deployment
+The application has been officially wired for your production domain: `https://docreaper.maoverse.xyz`.
+
+### Frontend & Extension
+- The `script.js` in the Web UI is configured to send its API requests to this domain.
+- The compiled Chrome Extension `popup.js` has its hardcoded POST endpoints updated to this domain. It also passes a `directPdf: true` flag to bypass the interactive UI straight to download.
+
+### Backend Hosting on Vercel
+A `vercel.json` file is included at the root directory to properly route requests (`/convert`, `/build-pdf`) to your Express `server.js` functions, and all other traffic to your `public/` directory static assets.
+**Important Serverless Note:** Vercel has a strict 50MB size limit for individual Serverless Functions. Standard `puppeteer` installs an entire Chromium browser which exceeds this limit. If you plan to host the backend directly on Vercel rather than a VPS (like Railway/Render/DigitalOcean), you will need to swap the `puppeteer` package for `puppeteer-core` and `@sparticuz/chromium` to stream a lightweight browser edge instance.
 
 ### Installation
 

@@ -37,8 +37,8 @@ document.getElementById('capture-btn').addEventListener('click', async () => {
 
         console.log(`Sending ${formattedCookies.length} cookies for ${url.hostname}`);
 
-        // 3. Send payload to local docReaper API
-        const response = await fetch('http://localhost:3000/convert', {
+        // 3. Send payload to production docReaper API
+        const response = await fetch('https://docreaper.maoverse.xyz/convert', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -46,7 +46,8 @@ document.getElementById('capture-btn').addEventListener('click', async () => {
             body: JSON.stringify({
                 mode: 'url',
                 url: tab.url,
-                cookies: formattedCookies
+                cookies: formattedCookies,
+                directPdf: true // Tell the backend to skip the Review Studio and build the PDF immediately
             })
         });
 

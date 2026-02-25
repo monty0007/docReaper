@@ -18,6 +18,7 @@
         <header>
             <h1>doc<span>Reaper</span></h1>
             <p>Convert HTML slides or web pages into pixel-perfect PDFs</p>
+            <a href="docReaper-extension.zip" download class="ext-download-btn">📦 Download Chrome Extension</a>
         </header>
 
         <div class="tabs">
@@ -51,6 +52,25 @@
                 </button>
             </div>
         </main>
+
+        <!-- Manual Review Studio -->
+        <section id="review-studio" class="review-studio hidden">
+            <div class="review-header">
+                <h2>Review & Crop Pages</h2>
+                <p>Drag the red cut-lines to prevent images or text from breaking in half.</p>
+            </div>
+
+            <div id="review-gallery" class="gallery">
+                <!-- Javascript will inject images here -->
+            </div>
+
+            <div class="review-footer">
+                <button id="build-pdf-btn">
+                    <span class="btn-text">Generate Final PDF</span>
+                    <div class="spinner"></div>
+                </button>
+            </div>
+        </section>
 
         <div id="toast-container" class="toast-container"></div>
 
