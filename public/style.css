@@ -87,11 +87,39 @@ header {
     flex-shrink: 0;
 }
 
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 0.25rem;
+}
+
+.logo-image {
+    width: 3.5rem;
+    height: 3.5rem;
+    filter: drop-shadow(0 0 10px var(--primary-glow));
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
+}
+
 header h1 {
     font-size: clamp(2rem, 8vw, 4rem);
     font-weight: 800;
     letter-spacing: -3px;
-    margin-bottom: 0.25rem;
     line-height: 1;
 }
 
@@ -108,24 +136,164 @@ header p {
     font-weight: 300;
 }
 
+/* Top Nav / Extension Area */
+.top-nav {
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    z-index: 100;
+}
+
 .ext-download-btn {
     display: inline-block;
-    margin-top: 1rem;
     background: rgba(168, 85, 247, 0.1);
     border: 1px solid rgba(168, 85, 247, 0.3);
     color: #c084fc;
-    padding: 0.5rem 1rem;
+    padding: 0.6rem 1.2rem;
     border-radius: 12px;
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 600;
     transition: var(--transition-med);
+    backdrop-filter: blur(10px);
 }
 
 .ext-download-btn:hover {
     background: rgba(168, 85, 247, 0.2);
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(168, 85, 247, 0.2);
+}
+
+.text-link {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.3s;
+    font-family: inherit;
+}
+
+.text-link:hover {
+    color: var(--text-main);
+}
+
+/* Modals */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(2, 6, 23, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.modal-backdrop.hidden {
+    opacity: 0;
+    pointer-events: none;
+    display: flex !important;
+    /* Override standard .hidden so transition works */
+    visibility: hidden;
+}
+
+.modal-content {
+    position: relative;
+    max-width: 600px;
+    width: 100%;
+    padding: 2.5rem;
+    transform: translateY(0) scale(1);
+    transition: transform 0.4s var(--ease-squish);
+}
+
+.modal-backdrop.hidden .modal-content {
+    transform: translateY(20px) scale(0.95);
+}
+
+.close-btn {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 2rem;
+    cursor: pointer;
+    transition: color 0.3s, transform 0.3s;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    color: var(--error);
+    transform: rotate(90deg);
+}
+
+.modal-content h2 {
+    margin-bottom: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.instructions-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.step {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1.25rem;
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+}
+
+.step-num {
+    background: var(--primary);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.step p {
+    color: var(--text-dim);
+    line-height: 1.5;
+    font-size: 1rem;
+}
+
+.step p strong {
+    color: var(--text-main);
+}
+
+.step p code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--secondary);
+    font-family: monospace;
+    font-size: 0.9rem;
 }
 
 /* Tabs */

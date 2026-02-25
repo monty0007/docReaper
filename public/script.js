@@ -309,4 +309,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     validateInputs();
+
+    // --- Modal Logic ---
+    const installModal = document.getElementById('install-modal');
+    const instructionsBtn = document.getElementById('instructions-btn');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+
+    if (instructionsBtn && installModal && closeModalBtn) {
+        instructionsBtn.addEventListener('click', () => {
+            installModal.classList.remove('hidden');
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            installModal.classList.add('hidden');
+        });
+
+        installModal.addEventListener('click', (e) => {
+            if (e.target === installModal) {
+                installModal.classList.add('hidden');
+            }
+        });
+    }
 });

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>docReaper - HTML/URL to PDF</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,11 +15,18 @@
 <body>
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
+    <div class="top-nav">
+        <a href="docReaper-extension.zip" download class="ext-download-btn">📦 Download Extension</a>
+        <button id="instructions-btn" class="text-link">How to install?</button>
+    </div>
+
     <div class="container">
         <header>
-            <h1>doc<span>Reaper</span></h1>
+            <div class="logo-container">
+                <img src="logo.svg" alt="docReaper Logo" class="logo-image">
+                <h1>doc<span>Reaper</span></h1>
+            </div>
             <p>Convert HTML slides or web pages into pixel-perfect PDFs</p>
-            <a href="docReaper-extension.zip" download class="ext-download-btn">📦 Download Chrome Extension</a>
         </header>
 
         <div class="tabs">
@@ -71,6 +79,39 @@
                 </button>
             </div>
         </section>
+
+        <!-- Installation Instructions Modal -->
+        <div id="install-modal" class="modal-backdrop hidden">
+            <div class="modal-content card">
+                <button id="close-modal-btn" class="close-btn">&times;</button>
+                <h2>How to Install the Extension</h2>
+                <div class="instructions-steps">
+                    <div class="step">
+                        <span class="step-num">1</span>
+                        <p>Click the <strong>Download Extension</strong> button to get the
+                            <code>docReaper-extension.zip</code> file.
+                        </p>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">2</span>
+                        <p><strong>Extract (Unzip)</strong> the downloaded folder to a location on your computer.</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">3</span>
+                        <p>Open Chrome and navigate to <code>chrome://extensions/</code> in your URL bar.</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">4</span>
+                        <p>Toggle <strong>Developer mode</strong> ON in the top right corner.</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">5</span>
+                        <p>Click <strong>Load unpacked</strong> and select the unzipped <code>docReaper-extension</code>
+                            folder you extracted earlier.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div id="toast-container" class="toast-container"></div>
 
