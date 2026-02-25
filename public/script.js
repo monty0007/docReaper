@@ -1,9 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Config for Vercel Deployment
+    const CONFIG = {
+        API_BASE_URL: '' // Leave empty for same-origin, or set to your backend URL
+    };
+
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
+
     const convertBtn = document.getElementById('convert-btn');
     const htmlInput = document.getElementById('html-input');
     const urlInput = document.getElementById('url-input');
+    const cookieInput = document.getElementById('cookie-input');
     const toastContainer = document.getElementById('toast-container');
 
     let activeMode = 'html';
@@ -14,27 +21,18 @@ document.addEventListener('DOMContentLoaded', () => {
         convertBtn.disabled = !value;
     };
 
-    htmlInput.addEventListener('input', validateInputs);
-    urlInput.addEventListener('input', validateInputs);
+    [htmlInput, urlInput].forEach(input => {
+        input.addEventListener('input', validateInputs);
+    });
 
-    // Tab Switching Logic
+    // Main Tab Switching (HTML Slides vs Full Page)
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            const mode = btn.dataset.tab.split('-')[0];
-            activeMode = mode;
-
-            // Update Buttons
+            activeMode = btn.dataset.tab.split('-')[0];
             tabBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-
-            // Update Content
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                if (content.id === `${mode}-mode`) {
-                    content.classList.add('active');
-                }
-            });
-
+            tabContents.forEach(c => c.classList.remove('active'));
+            document.getElementById(`${activeMode}-mode`).classList.add('active');
             validateInputs();
         });
     });
@@ -45,8 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.className = `toast ${type}`;
         toast.innerHTML = `<span>${message}</span>`;
         toastContainer.appendChild(toast);
-
-        // Auto remove after 5s
         setTimeout(() => {
             toast.classList.add('toast-exit');
             setTimeout(() => toast.remove(), 300);
@@ -60,19 +56,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeMode === 'html') {
             payload.htmlContent = htmlInput.value.trim();
         } else {
-            payload.url = urlInput.value.trim();
-            if (!payload.url.startsWith('http')) {
-                payload.url = 'https://' + payload.url;
+            payload.mode = 'url';
+            let formattedUrl = urlInput.value.trim();
+            if (!formattedUrl.startsWith('http')) {
+                formattedUrl = 'https://' + formattedUrl;
+            }
+            payload.url = formattedUrl;
+
+            // Handle Cookies
+            const cookieVal = cookieInput.value.trim();
+            if (cookieVal) {
+                try {
+                    payload.cookies = JSON.parse(cookieVal);
+                } catch (e) {
+                    showToast('Invalid Cookie JSON format.', 'error');
+                    return; // Halt conversion
+                }
             }
         }
 
-        // UI State: Loading
         convertBtn.disabled = true;
         convertBtn.classList.add('loading');
-        showToast('Processing your request... 🚀', 'info');
+        showToast('Killing pixels to bring you a PDF... 💀', 'info');
 
         try {
-            const response = await fetch('/convert', {
+            const endpoint = CONFIG.API_BASE_URL ? `${CONFIG.API_BASE_URL}/convert` : '/convert';
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -82,7 +91,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.message || 'Conversion failed');
             }
-
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -94,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (contentDisposition) {
                 const match = contentDisposition.match(/filename="(.+)"/);
-                if (match && match[1]) filename = match[1];
+                if (match && match[1]) filename = match[1].replace(/filename\s*=\s*/, '').replace(/"/g, '');
             }
 
             a.download = filename;
@@ -102,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
             a.click();
             window.URL.revokeObjectURL(url);
 
-            showToast('Success! Your PDF is downloading.', 'success');
+            showToast('Success! Your soul... I mean PDF is ready. ✨', 'success');
         } catch (error) {
             console.error('Error:', error);
             showToast(error.message || 'An error occurred during conversion.', 'error');
@@ -112,6 +120,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Initial validation
     validateInputs();
 });

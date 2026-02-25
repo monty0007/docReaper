@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>docReaper Extension</title>
+    <style>
+        :root {
+            --bg-dark: #020617;
+            --primary: #6366f1;
+            --text-main: #f8fafc;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            width: 320px;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        h2 span {
+            color: var(--primary);
+        }
+
+        p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #7376ff;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #1e293b;
+            color: #475569;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #status {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #10b981;
+            display: none;
+        }
+
+        #error {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #f43f5e;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>doc<span>Reaper</span></h2>
+    <p>Capture this page as a PDF using your active session.</p>
+
+    <button id="capture-btn">Capture to PDF</button>
+
+    <div id="status">Capturing & Generating PDF...</div>
+    <div id="error"></div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

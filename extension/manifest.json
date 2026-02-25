@@ -1,0 +1,27 @@
+{
+    "manifest_version": 3,
+    "name": "docReaper Web Clipper",
+    "version": "1.0",
+    "description": "1-Click HTML/URL to PDF converter with automated session cookie injection.",
+    "permissions": [
+        "activeTab",
+        "cookies",
+        "scripting",
+        "downloads"
+    ],
+    "host_permissions": [
+        "*://*/*",
+        "http://localhost:3000/*"
+    ],
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icon16.png",
+            "48": "icon48.png",
+            "128": "icon128.png"
+        }
+    },
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'"
+    }
+}

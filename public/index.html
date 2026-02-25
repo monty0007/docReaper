@@ -32,8 +32,16 @@
             </div>
 
             <div id="url-mode" class="tab-content">
-                <label for="url-input">Enter website URL</label>
-                <input type="url" id="url-input" placeholder="https://example.com/slides">
+                <div class="input-group">
+                    <label for="url-input">ENTER WEBSITE URL</label>
+                    <input type="url" id="url-input" placeholder="https://example.com/long-page-to-split">
+                </div>
+
+                <div class="input-group cookie-group">
+                    <label for="cookie-input">SESSION COOKIES JSON (OPTIONAL) - FOR LOGGED IN PAGES</label>
+                    <textarea id="cookie-input"
+                        placeholder='[{"name": "session_id", "value": "xyz...", "domain": ".example.com"}]'></textarea>
+                </div>
             </div>
 
             <div class="actions">
