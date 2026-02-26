@@ -3,7 +3,29 @@ const puppeteer = require('puppeteer-core');
 const { addExtra } = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const puppeteerExtra = addExtra(puppeteer);
-puppeteerExtra.use(StealthPlugin());
+
+// 🆕 FIX: Bypassing dynamic stealth loading (Fixes "Cannot find module" on Vercel/Local)
+// We register each evasion individually to ensure they are properly bundled and loaded.
+const stealthEvasions = [
+    require('puppeteer-extra-plugin-stealth/evasions/chrome.app'),
+    require('puppeteer-extra-plugin-stealth/evasions/chrome.csi'),
+    require('puppeteer-extra-plugin-stealth/evasions/chrome.loadTimes'),
+    require('puppeteer-extra-plugin-stealth/evasions/chrome.runtime'),
+    require('puppeteer-extra-plugin-stealth/evasions/defaultArgs'),
+    require('puppeteer-extra-plugin-stealth/evasions/iframe.contentWindow'),
+    require('puppeteer-extra-plugin-stealth/evasions/media.codecs'),
+    require('puppeteer-extra-plugin-stealth/evasions/navigator.hardwareConcurrency'),
+    require('puppeteer-extra-plugin-stealth/evasions/navigator.languages'),
+    require('puppeteer-extra-plugin-stealth/evasions/navigator.permissions'),
+    require('puppeteer-extra-plugin-stealth/evasions/navigator.plugins'),
+    require('puppeteer-extra-plugin-stealth/evasions/navigator.webdriver'),
+    require('puppeteer-extra-plugin-stealth/evasions/sourceurl'),
+    require('puppeteer-extra-plugin-stealth/evasions/user-agent-override'),
+    require('puppeteer-extra-plugin-stealth/evasions/webgl.vendor'),
+    require('puppeteer-extra-plugin-stealth/evasions/window.outerdimensions'),
+];
+
+stealthEvasions.forEach(evasion => puppeteerExtra.use(evasion()));
 
 const chromium = require('@sparticuz/chromium');
 const { PDFDocument } = require('pdf-lib');

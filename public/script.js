@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Config for Vercel Deployment
     const CONFIG = {
-        API_BASE_URL: 'https://docreaper.maoverse.xyz'
+        API_BASE_URL: '' // Set to 'https://docreaper.maoverse.xyz' for production
     };
 
     const tabBtns = document.querySelectorAll('.tab-btn');
