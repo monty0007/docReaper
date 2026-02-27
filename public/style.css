@@ -37,27 +37,28 @@ body {
 /* Background Accents */
 .bg-blob {
     position: fixed;
-    width: 600px;
-    height: 600px;
+    width: 700px;
+    height: 700px;
     border-radius: 50%;
-    filter: blur(120px);
     z-index: -1;
     opacity: 0.15;
     pointer-events: none;
+    filter: blur(100px);
+    /* Extra safety for smooth edges */
 }
 
 .blob-1 {
-    top: -100px;
-    right: -100px;
-    background: var(--primary);
-    animation: pulse 10s infinite alternate;
+    top: -150px;
+    right: -150px;
+    background: radial-gradient(circle at center, var(--primary) 0%, rgba(99, 102, 241, 0) 70%);
+    animation: pulse 12s infinite alternate;
 }
 
 .blob-2 {
-    bottom: -100px;
-    left: -100px;
-    background: var(--secondary);
-    animation: pulse 8s infinite alternate-reverse;
+    bottom: -150px;
+    left: -150px;
+    background: radial-gradient(circle at center, var(--secondary) 0%, rgba(168, 85, 247, 0) 70%);
+    animation: pulse 10s infinite alternate-reverse;
 }
 
 @keyframes pulse {
@@ -449,27 +450,25 @@ input {
     opacity: 1;
 }
 
-/* Actions */
-.actions {
-    margin-top: 2.5rem;
+#convert-btn,
+#convert-png-btn {
+    height: 64px;
+    padding: 0 2.5rem;
+    border-radius: 20px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition-med);
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 12px;
 }
 
 #convert-btn {
     background: var(--primary);
     color: white;
     border: none;
-    padding: 1.25rem 4rem;
-    border-radius: 20px;
-    font-size: 1.15rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: var(--transition-med);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    position: relative;
     box-shadow: 0 4px 0 rgba(0, 0, 0, 0.1);
 }
 
@@ -479,16 +478,39 @@ input {
     background: #7376ff;
 }
 
-#convert-btn:not(:disabled):active {
+#convert-png-btn {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    border: 1px solid var(--glass-border);
+}
+
+#convert-png-btn:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--glass-border-bright);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -10px rgba(255, 255, 255, 0.05);
+}
+
+#convert-btn:not(:disabled):active,
+#convert-png-btn:not(:disabled):active {
     transform: translateY(-1px);
 }
 
-#convert-btn:disabled {
+#convert-btn:disabled,
+#convert-png-btn:disabled {
     background: #1e293b;
     border: 1px solid var(--glass-border);
     color: #475569;
     cursor: not-allowed;
     opacity: 0.5;
+}
+
+.actions {
+    margin-top: 2.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
 }
 
 .spinner {
@@ -703,7 +725,6 @@ footer {
     width: 100%;
     height: auto;
     display: block;
-    user-drag: none;
     -webkit-user-drag: none;
     pointer-events: none;
     /* Let drag events pass through to canvas or overlay */

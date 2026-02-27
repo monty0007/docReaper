@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabContents = document.querySelectorAll('.tab-content');
 
     const convertBtn = document.getElementById('convert-btn');
+    const convertPngBtn = document.getElementById('convert-png-btn');
     const htmlInput = document.getElementById('html-input');
     const urlInput = document.getElementById('url-input');
     const cookieInput = document.getElementById('cookie-input');
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const validateInputs = () => {
         const value = activeMode === 'html' ? htmlInput.value.trim() : urlInput.value.trim();
         convertBtn.disabled = !value;
+        convertPngBtn.disabled = !value;
     };
 
     [htmlInput, urlInput].forEach(input => {
@@ -50,8 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Conversion Logic
-    convertBtn.addEventListener('click', async () => {
-        const payload = { mode: activeMode };
+    const handleConversion = async (format = 'pdf') => {
+        const payload = { mode: activeMode, format };
 
         if (activeMode === 'html') {
             payload.htmlContent = htmlInput.value.trim();
@@ -75,9 +77,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        convertBtn.disabled = true;
-        convertBtn.classList.add('loading');
-        showToast('Killing pixels to bring you a PDF... 💀', 'info');
+        const currentBtn = format === 'pdf' ? convertBtn : convertPngBtn;
+        const otherBtn = format === 'pdf' ? convertPngBtn : convertBtn;
+
+        currentBtn.disabled = true;
+        otherBtn.disabled = true;
+        currentBtn.classList.add('loading');
+        showToast(format === 'pdf' ? 'Killing pixels to bring you a PDF... 💀' : 'Capturing frames as images... 📸', 'info');
 
         try {
             const endpoint = CONFIG.API_BASE_URL ? `${CONFIG.API_BASE_URL}/convert` : '/convert';
@@ -92,8 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.message || 'Conversion failed');
             }
 
-            // URL Mode returns JSON (Review Studio array)
-            // HTML Mode still returns raw PDF Blob
             const contentType = response.headers.get('content-type');
 
             if (contentType && contentType.includes('application/json')) {
@@ -105,37 +109,61 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(data.message || 'Unknown JSON error');
                 }
             } else {
-                // Legacy HTML Mode - direct PDF download
                 const blob = await response.blob();
+                console.log(`Response received: Type=${contentType}, Size=${blob.size} bytes`);
+
+                // If blob is suspiciously small, it might be an error message that slipped through
+                if (blob.size < 500 && !contentType.includes('image')) {
+                    const text = await blob.text();
+                    try {
+                        const json = JSON.parse(text);
+                        if (json.status === 'error') throw new Error(json.message);
+                    } catch (e) {
+                        // ignore or non-json
+                    }
+                }
+
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
 
                 const contentDisposition = response.headers.get('Content-Disposition');
-                let filename = 'presentation.pdf';
+                let filename = format === 'pdf' ? 'presentation.pdf' : 'presentation.png';
 
-                if (contentDisposition) {
-                    const match = contentDisposition.match(/filename="(.+)"/);
-                    if (match && match[1]) filename = match[1].replace(/filename\s*=\s*/, '').replace(/"/g, '');
+                if (contentType && contentType.includes('application/zip')) {
+                    filename = 'presentation_images.zip';
                 }
 
+                if (contentDisposition) {
+                    const match = contentDisposition.match(/filename="?([^";]+)"?/);
+                    if (match && match[1]) filename = match[1];
+                }
+
+                console.log(`Downloading as: ${filename}`);
                 a.download = filename;
                 document.body.appendChild(a);
                 a.click();
-                window.URL.revokeObjectURL(url);
 
-                showToast('Success! Your HTML presentation is ready. ✨', 'success');
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+
+                showToast(`Success! Your ${format.toUpperCase()} is ready (${(blob.size / 1024).toFixed(1)} KB). ✨`, 'success');
             }
 
         } catch (error) {
             console.error('Error:', error);
             showToast(error.message || 'An error occurred during conversion.', 'error');
         } finally {
-            convertBtn.classList.remove('loading');
+            currentBtn.classList.remove('loading');
             validateInputs();
         }
-    });
+    };
+
+    convertBtn.addEventListener('click', () => handleConversion('pdf'));
+    convertPngBtn.addEventListener('click', () => handleConversion('png'));
 
     // --- Review Studio UI Logic ---
     let currentReviewImages = [];

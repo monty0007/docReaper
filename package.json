@@ -16,10 +16,11 @@
     "@sparticuz/chromium": "^143.0.4",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "jszip": "^3.10.1",
     "pdf-lib": "^1.17.1",
+    "pdf-to-png-converter": "^3.11.0",
     "puppeteer-core": "^24.37.5",
     "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "jszip": "^3.10.1"
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   }
 }
