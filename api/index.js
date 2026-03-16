@@ -1,7 +1,10 @@
 const express = require('express');
 const puppeteer = require('puppeteer-core');
 const { addExtra } = require('puppeteer-extra');
+// Ensure all nested plugins are bundled
+require('puppeteer-extra-plugin');
 require('puppeteer-extra-plugin-user-preferences');
+require('puppeteer-extra-plugin-user-data-dir');
 const puppeteerExtra = addExtra(puppeteer);
 
 // 🆕 FIX: Bypassing dynamic stealth loading (Fixes "Cannot find module" on Vercel/Local)
