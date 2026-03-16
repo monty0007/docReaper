@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .card {
+            width: 1280px;
+            height: 720px;
+            background: #ffffff;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e0e0e0;
+        }
+
+        /* Microsoft 4-colour top bar — exact brand colours, hard stops */
+        .top-bar {
+            height: 5px;
+            background: linear-gradient(90deg,
+                    #f25022 0% 25%,
+                    #ffb900 25% 50%,
+                    #00a4ef 50% 75%,
+                    #7fba00 75% 100%);
+            flex-shrink: 0;
+        }
+
+        /* Vertical centre divider */
+        .v-line {
+            position: absolute;
+            left: 50%;
+            top: 4px;
+            bottom: 0;
+            width: 1px;
+            background: #e0e0e0;
+            transform: translateX(-50%);
+            z-index: 1;
+        }
+
+        /* ── TOP: logos + names ── */
+        .top {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 32px 60px 0;
+            position: relative;
+            z-index: 2;
+            gap: 0 24px;
+        }
+
+        .product {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .product-logo {
+            width: 68px;
+            height: 68px;
+            object-fit: contain;
+        }
+
+        .product-name {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: -0.4px;
+            text-align: center;
+        }
+
+        .product-desc {
+            font-size: 14.5px;
+            font-weight: 400;
+            color: #555;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* center question pill */
+        .center-pill {
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px 20px;
+            text-align: center;
+        }
+
+        .pill-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #999;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .pill-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: #222;
+            line-height: 1.45;
+            white-space: nowrap;
+        }
+
+        /* ── BULLETS ── */
+        .bullets {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            padding: 22px 60px 0;
+            gap: 0 80px;
+            position: relative;
+            z-index: 2;
+            flex: 1;
+        }
+
+        .bullet-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bullet {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 7px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .bullet:last-child {
+            border-bottom: none;
+        }
+
+        .bullet-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            margin-top: 7px;
+            flex-shrink: 0;
+        }
+
+        .dot-sp {
+            background: #038387;
+        }
+
+        .dot-dv {
+            background: #7719aa;
+        }
+
+        .bullet-text {
+            font-size: 14.5px;
+            font-weight: 400;
+            color: #333;
+            line-height: 1.55;
+        }
+
+        .bullet-text strong {
+            font-weight: 600;
+            color: #111;
+        }
+
+        /* ── DIAGRAMS ── */
+        .diagrams {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 14px 60px 26px;
+            gap: 0 20px;
+            position: relative;
+            z-index: 2;
+            background: #fafafa;
+            border-top: 1px solid #ebebeb;
+            margin-top: auto;
+        }
+
+        .sp-diagram,
+        .dv-diagram {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .dv-diagram {
+            justify-content: flex-end;
+        }
+
+        .flow-node {
+            border-radius: 5px;
+            padding: 6px 13px;
+            font-size: 11.5px;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        .fn-site {
+            background: #e6f4ff;
+            border: 1.5px solid #0078d4;
+            color: #0050a0;
+        }
+
+        .fn-lib {
+            background: #f0fbfb;
+            border: 1px solid #038387;
+            color: #025b5e;
+            font-size: 11px;
+            padding: 5px 10px;
+        }
+
+        .fn-file {
+            background: #f8f8f8;
+            border: 1px solid #ccc;
+            color: #555;
+            font-size: 10.5px;
+            padding: 5px 9px;
+        }
+
+        .fn-env {
+            background: #f5edff;
+            border: 1.5px solid #7719aa;
+            color: #5a0080;
+        }
+
+        .fn-table {
+            background: #faf5ff;
+            border: 1px solid #9d4edd;
+            color: #6b21a8;
+            font-size: 11px;
+            padding: 5px 10px;
+        }
+
+        .fn-feat {
+            background: #f8f8f8;
+            border: 1px solid #ccc;
+            color: #555;
+            font-size: 10.5px;
+            padding: 5px 9px;
+            border-radius: 4px;
+        }
+
+        .arrow {
+            color: #aaa;
+            font-size: 16px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .node-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        /* bridge */
+        .bridge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bridge-note {
+            font-size: 10.5px;
+            font-weight: 500;
+            color: #999;
+            text-align: center;
+            line-height: 1.5;
+            max-width: 155px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="top-bar"></div>
+        <div class="v-line"></div>
+
+        <!-- TOP -->
+        <div class="top">
+            <div class="product">
+                <img class="product-logo"
+                    src="../../Downloads/png-transparent-microsoft-sharepoint-logo-office-365-icon-removebg-preview.png"
+                    alt="SharePoint" />
+                <div class="product-name">SharePoint</div>
+                <div class="product-desc">When your data is content &amp; collaboration-first</div>
+            </div>
+
+            <div class="center-pill">
+                <div class="pill-label">The key question</div>
+                <div class="pill-text">Is your data unstructured content<br />or a structured relational model?</div>
+            </div>
+
+            <div class="product">
+                <img class="product-logo" src="../../Downloads/images-removebg-preview.png" alt="Dataverse" />
+                <div class="product-name">Dataverse</div>
+                <div class="product-desc">When your data is relational, governed &amp; app-ready</div>
+            </div>
+        </div>
+
+        <!-- BULLETS -->
+        <div class="bullets">
+            <div class="bullet-col">
+                <div class="bullet">
+                    <div class="bullet-dot dot-sp"></div>
+                    <div class="bullet-text">Stores documents, PDFs, Excel files &amp; wiki pages — it's a
+                        <strong>content store first</strong>
+                    </div>
+                </div>
+                <div class="bullet">
+                    <div class="bullet-dot dot-sp"></div>
+                    <div class="bullet-text">Built for human collaboration — co-authoring, version history, site
+                        permissions</div>
+                </div>
+                <div class="bullet">
+                    <div class="bullet-dot dot-sp"></div>
+                    <div class="bullet-text">Lists work for simple data, but <strong>no foreign keys or enforced
+                            relationships</strong></div>
+                </div>
+                <div class="bullet">
+                    <div class="bullet-dot dot-sp"></div>
+                    <div class="bullet-text">Ideal for intranets, document libraries &amp; content workflows</div>
+                </div>
+                <div class="bullet">
+                    <div class="bullet-dot dot-sp"></div>
+                    <div class="bullet-text">You can browse it like a folder — because it works like one</div>
+                </div>
+            </div>
+
+            <div class="bullet-col">
+                <div class="bullet">
+                    <div class="bullet-dot dot-dv"></div>
+                    <div class="bullet-text">Tables with <strong>enforced relationships</strong>, lookups, rollups &amp;
+                        calculated columns</div>
+                </div>
+                <div class="bullet">
+                    <div class="bullet-dot dot-dv"></div>
+                    <div class="bullet-text">Built for apps &amp; automation — powers Model-Driven Apps, Power Automate
+                        &amp; Copilot Studio</div>
+                </div>
+                <div class="bullet">
+                    <div class="bullet-dot dot-dv"></div>
+                    <div class="bullet-text">Row-level security, field-level security, audit logs &amp;
+                        <strong>compliance controls</strong> built in
+                    </div>
+                </div>
+                <div class="bullet">
+                    <div class="bullet-dot dot-dv"></div>
+                    <div class="bullet-text">The data backbone of Dynamics 365 — <strong>enterprise-grade from day
+                            one</strong></div>
+                </div>
+                <div class="bullet">
+                    <div class="bullet-dot dot-dv"></div>
+                    <div class="bullet-text">Schema evolves with your business — structured around how your data
+                        <strong>actually relates</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DIAGRAMS -->
+        <div class="diagrams">
+            <div class="sp-diagram">
+                <div class="flow-node fn-site">SharePoint Site</div>
+                <div class="arrow">→</div>
+                <div class="node-stack">
+                    <div class="flow-node fn-lib">📁 Document Library</div>
+                    <div class="flow-node fn-lib">📋 List</div>
+                    <div class="flow-node fn-lib">📰 Pages</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="node-stack">
+                    <div class="flow-node fn-file">file.docx</div>
+                    <div class="flow-node fn-file">row 1..N</div>
+                    <div class="flow-node fn-file">news post</div>
+                </div>
+            </div>
+
+            <div class="bridge">
+                <svg width="52" height="26" viewBox="0 0 52 26" fill="none">
+                    <defs>
+                        <marker id="r" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                            <path d="M0,0 L6,3 L0,6 Z" fill="#bbb" />
+                        </marker>
+                        <marker id="l" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto">
+                            <path d="M6,0 L0,3 L6,6 Z" fill="#bbb" />
+                        </marker>
+                    </defs>
+                    <path d="M4 8 L48 8" stroke="#bbb" stroke-width="1.5" marker-end="url(#r)" />
+                    <path d="M48 18 L4 18" stroke="#bbb" stroke-width="1.5" marker-end="url(#l)" />
+                </svg>
+                <div class="bridge-note">They complement each other — not competitors</div>
+            </div>
+
+            <div class="dv-diagram">
+                <div class="node-stack">
+                    <div class="fn-feat">Relationships</div>
+                    <div class="fn-feat">Business Rules</div>
+                    <div class="fn-feat">Row Security</div>
+                    <div class="fn-feat">Audit Trail</div>
+                </div>
+                <div class="arrow">←</div>
+                <div class="node-stack">
+                    <div class="flow-node fn-table">🗂 Account</div>
+                    <div class="flow-node fn-table">🗂 Contact</div>
+                    <div class="flow-node fn-table">🗂 Order</div>
+                </div>
+                <div class="arrow">←</div>
+                <div class="flow-node fn-env">Dataverse Env</div>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>
